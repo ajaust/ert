@@ -277,6 +277,7 @@ class ExperimentPanel(QWidget):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         event_queue: SimpleQueue[StatusEvents] = SimpleQueue()
         try:
+            self.config.random_seed = self.config.random_seed_generator.seed
             model = create_model(
                 self.config,
                 args,
