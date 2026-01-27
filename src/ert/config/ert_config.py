@@ -712,7 +712,7 @@ class ErtConfig(BaseModel):
     config_path: str = Field(init=False, default="")
     observation_declarations: list[Observation] = Field(default_factory=list)
     _observations: dict[str, pl.DataFrame] | None = PrivateAttr(None)
-    _user_defined_random_seed: int | None = PrivateAttr(default=None)
+    _is_user_defined_random_seed: bool = PrivateAttr(default=False)
     _random_seed: int = PrivateAttr(default_factory=lambda: _seed_sequence(None))
 
     @property
@@ -750,12 +750,13 @@ class ErtConfig(BaseModel):
 
     @random_seed.setter
     def random_seed(self, value: int) -> None:
-        self._user_defined_random_seed = value
+        self._is_user_defined_random_seed = True
         self._random_seed = value
         logger.info(f"Applying user defined random seed:\nRANDOM_SEED {value}")
 
     def advance_random_seed(self) -> None:
-        self._random_seed = _seed_sequence(self._user_defined_random_seed)
+        if not self._is_user_defined_random_seed:
+            self._random_seed = _seed_sequence(None)
 
     @model_validator(mode="after")
     def set_fields(self) -> Self:
@@ -1149,11 +1150,13 @@ class ErtConfig(BaseModel):
                 ),
             )
 
-            cls_config._user_defined_random_seed = config_dict.get(
-                ConfigKeys.RANDOM_SEED
-            )
-            if cls_config._user_defined_random_seed is not None:
-                cls_config.random_seed = cls_config._user_defined_random_seed
+            random_seed = config_dict.get(ConfigKeys.RANDOM_SEED)
+            if random_seed is not None:
+                cls_config._is_user_defined_random_seed = True
+                cls_config.random_seed = random_seed
+            else:
+                cls_config._random_seed = _seed_sequence(random_seed)
+
         except PydanticValidationError as err:
             raise ConfigValidationError.from_pydantic(err) from err
         return cls_config
