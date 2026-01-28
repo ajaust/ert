@@ -188,7 +188,7 @@ def test_initialize_random_seed(
         random_seed = (
             next(
                 message
-                for message in caplog.messages
+                for message in reversed(caplog.messages)
                 if message.startswith("To repeat this experiment")
             )
             .splitlines()[1]

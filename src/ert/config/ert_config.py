@@ -7,6 +7,7 @@ import pprint
 import re
 from collections import Counter, defaultdict
 from collections.abc import Mapping
+from dataclasses import dataclass
 from functools import cached_property
 from os import path
 from pathlib import Path
@@ -14,7 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, overload
 
 import polars as pl
 from numpy.random import SeedSequence
-from pydantic import BaseModel, Field, PrivateAttr, computed_field, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 from pydantic import ValidationError as PydanticValidationError
 
 from ert.substitutions import Substitutions
@@ -85,19 +86,26 @@ ECL_BASE_DEPRECATION_MSG = (
 )
 
 
-def _seed_sequence(seed: int | None) -> int:
-    # Set up RNG
-    if seed is None:
+@dataclass
+class RandomSeed:
+    user_defined_seed: int | None = None
+
+    def __init__(self, user_defined_seed: int | None = None) -> None:
+        self.user_defined_seed = user_defined_seed
+
+    @property
+    def advance(self) -> int:
+        if self.user_defined_seed is not None:
+            return self.user_defined_seed
+
         int_seed = SeedSequence().entropy
         logger.info(
             "To repeat this experiment, "
             "add the following random seed to your config file:\n"
             f"RANDOM_SEED {int_seed}"
         )
-    else:
-        int_seed = seed
-    assert isinstance(int_seed, int)
-    return int_seed
+        assert isinstance(int_seed, int)
+        return int_seed
 
 
 def create_forward_model_json(
@@ -703,7 +711,7 @@ class ErtConfig(BaseModel):
     )
     runpath_file: Path = Path(DEFAULT_RUNPATH_FILE)
     prioritize_private_ip_address: bool = False
-
+    random_seed: int = Field(default_factory=lambda: RandomSeed(None).advance)
     ert_templates: list[tuple[str, str]] = Field(default_factory=list)
 
     forward_model_steps: list[SiteOrUserForwardModelStep] = Field(default_factory=list)
@@ -712,8 +720,13 @@ class ErtConfig(BaseModel):
     config_path: str = Field(init=False, default="")
     observation_declarations: list[Observation] = Field(default_factory=list)
     _observations: dict[str, pl.DataFrame] | None = PrivateAttr(None)
-    _is_user_defined_random_seed: bool = PrivateAttr(default=False)
-    _random_seed: int = PrivateAttr(default_factory=lambda: _seed_sequence(None))
+    _random_seed_generator: RandomSeed = PrivateAttr(
+        default_factory=lambda: RandomSeed(None)
+    )
+
+    def advance_random_seed(self) -> int:
+        self.random_seed = self._random_seed_generator.advance
+        return self.random_seed
 
     @property
     def observations(self) -> dict[str, pl.DataFrame]:
@@ -742,21 +755,6 @@ class ErtConfig(BaseModel):
                 ),
             )
         return self._observations
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def random_seed(self) -> int:
-        return self._random_seed
-
-    @random_seed.setter
-    def random_seed(self, value: int) -> None:
-        self._is_user_defined_random_seed = True
-        self._random_seed = value
-        logger.info(f"Applying user defined random seed:\nRANDOM_SEED {value}")
-
-    def advance_random_seed(self) -> None:
-        if not self._is_user_defined_random_seed:
-            self._random_seed = _seed_sequence(None)
 
     @model_validator(mode="after")
     def set_fields(self) -> Self:
@@ -1150,12 +1148,10 @@ class ErtConfig(BaseModel):
                 ),
             )
 
-            random_seed = config_dict.get(ConfigKeys.RANDOM_SEED)
-            if random_seed is not None:
-                cls_config._is_user_defined_random_seed = True
-                cls_config.random_seed = random_seed
-            else:
-                cls_config._random_seed = _seed_sequence(random_seed)
+            cls_config._random_seed_generator = RandomSeed(
+                config_dict.get(ConfigKeys.RANDOM_SEED)
+            )
+            cls_config.advance_random_seed()
 
         except PydanticValidationError as err:
             raise ConfigValidationError.from_pydantic(err) from err
