@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Self, cast, overload
 
 import polars as pl
 from numpy.random import SeedSequence
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, computed_field, model_validator
 from pydantic import ValidationError as PydanticValidationError
 
 from ert.substitutions import Substitutions
@@ -711,7 +711,6 @@ class ErtConfig(BaseModel):
     )
     runpath_file: Path = Path(DEFAULT_RUNPATH_FILE)
     prioritize_private_ip_address: bool = False
-    random_seed: int = Field(default_factory=lambda: RandomSeed(None).advance)
     ert_templates: list[tuple[str, str]] = Field(default_factory=list)
 
     forward_model_steps: list[SiteOrUserForwardModelStep] = Field(default_factory=list)
@@ -720,13 +719,23 @@ class ErtConfig(BaseModel):
     config_path: str = Field(init=False, default="")
     observation_declarations: list[Observation] = Field(default_factory=list)
     _observations: dict[str, pl.DataFrame] | None = PrivateAttr(None)
+    _random_seed: int = PrivateAttr(default_factory=lambda: RandomSeed(None).advance)
     _random_seed_generator: RandomSeed = PrivateAttr(
         default_factory=lambda: RandomSeed(None)
     )
 
-    def advance_random_seed(self) -> int:
-        self.random_seed = self._random_seed_generator.advance
-        return self.random_seed
+    @computed_field
+    @property
+    def random_seed(self) -> int:
+        return self._random_seed
+
+    @random_seed.setter
+    def random_seed(self, value: int | None) -> None:
+        self._random_seed_generator.user_defined_seed = value
+        self._random_seed = self._random_seed_generator.advance
+
+    def advance_random_seed(self) -> None:
+        self._random_seed = self._random_seed_generator.advance
 
     @property
     def observations(self) -> dict[str, pl.DataFrame]:
@@ -1148,10 +1157,7 @@ class ErtConfig(BaseModel):
                 ),
             )
 
-            cls_config._random_seed_generator = RandomSeed(
-                config_dict.get(ConfigKeys.RANDOM_SEED)
-            )
-            cls_config.advance_random_seed()
+            cls_config.random_seed = config_dict.get(ConfigKeys.RANDOM_SEED)
 
         except PydanticValidationError as err:
             raise ConfigValidationError.from_pydantic(err) from err
