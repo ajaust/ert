@@ -132,6 +132,7 @@ def _setup_single_test_run(
         parameter_configs=config.ensemble_config.parameter_configuration,
     )
 
+    config.random_seed = config.random_seed_generator.advance
     runmodel_config = SingleTestRunConfig(
         random_seed=config.random_seed,
         runpath_file=config.runpath_file,
@@ -191,7 +192,7 @@ def _setup_ensemble_experiment(
         parameter_configs=config.ensemble_config.parameter_configuration,
     )
 
-    config.advance_random_seed()
+    config.random_seed = config.random_seed_generator.advance
     runmodel_config = EnsembleExperimentConfig(
         random_seed=config.random_seed,
         runpath_file=config.runpath_file,
@@ -229,6 +230,7 @@ def _setup_evaluate_ensemble(
 ) -> EvaluateEnsemble:
     active_realizations = _get_and_validate_active_realizations_list(args, config)
     validate_minimum_realizations(config, active_realizations)
+    config.random_seed = config.random_seed_generator.advance
     runmodel_config = EvaluateEnsembleConfig(
         random_seed=config.random_seed,
         active_realizations=active_realizations,
@@ -286,6 +288,7 @@ def _setup_manual_update(
     active_realizations = _realizations(args, config.runpath_config.num_realizations)
     validate_minimum_realizations(config, active_realizations.tolist())
 
+    config.random_seed = config.random_seed_generator.advance
     runmodel_config = ManualUpdateConfig(
         random_seed=config.random_seed,
         active_realizations=active_realizations.tolist(),
@@ -319,6 +322,7 @@ def _setup_manual_update_enif(
 ) -> ManualUpdate:
     active_realizations = _realizations(args, config.runpath_config.num_realizations)
 
+    config.random_seed = config.random_seed_generator.advance
     return ManualUpdateEnIF(
         random_seed=config.random_seed,
         active_realizations=active_realizations.tolist(),
@@ -367,6 +371,7 @@ def _setup_ensemble_smoother(
         require_updateable_param=True,
     )
 
+    config.random_seed = config.random_seed_generator.advance
     runmodel_config = EnsembleSmootherConfig(
         target_ensemble=args.target_ensemble,
         experiment_name=getattr(args, "experiment_name", ""),
@@ -413,6 +418,7 @@ def _setup_ensemble_information_filter(
         parameter_configs=config.ensemble_config.parameter_configuration,
     )
 
+    config.random_seed = config.random_seed_generator.advance
     runmodel_config = EnsembleInformationFilterConfig(
         target_ensemble=args.target_ensemble,
         experiment_name=getattr(args, "experiment_name", ""),
@@ -482,6 +488,7 @@ def _setup_multiple_data_assimilation(
         require_updateable_param=True,
     )
 
+    config.random_seed = config.random_seed_generator.advance
     runmodel_config = MultipleDataAssimilationConfig(
         random_seed=config.random_seed,
         active_realizations=active_realizations,
