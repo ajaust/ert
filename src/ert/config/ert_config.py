@@ -87,7 +87,7 @@ ECL_BASE_DEPRECATION_MSG = (
 
 
 @dataclass
-class RandomSeed:
+class RandomSeedGenerator:
     user_defined_seed: int | None = None
 
     @property
@@ -716,8 +716,12 @@ class ErtConfig(BaseModel):
     config_path: str = Field(init=False, default="")
     observation_declarations: list[Observation] = Field(default_factory=list)
     _observations: dict[str, pl.DataFrame] | None = PrivateAttr(None)
-    _random_seed: int = PrivateAttr(default_factory=lambda: RandomSeed().advance)
-    _random_seed_generator: RandomSeed = PrivateAttr(default_factory=RandomSeed)
+    _random_seed: int = PrivateAttr(
+        default_factory=lambda: RandomSeedGenerator().advance
+    )
+    _random_seed_generator: RandomSeedGenerator = PrivateAttr(
+        default_factory=RandomSeedGenerator
+    )
 
     @computed_field
     @property
