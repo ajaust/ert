@@ -99,6 +99,7 @@ def run_cli(args: Namespace, runtime_plugins: ErtRuntimePlugins | None = None) -
     using_local_queuesystem: bool = True
     try:
         with use_runtime_plugins(get_site_plugins()):
+            ert_config.random_seed = ert_config.random_seed_generator.advance
             model = create_model(
                 ert_config,
                 args,

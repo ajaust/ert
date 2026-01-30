@@ -684,7 +684,7 @@ def test_that_dumped_manual_update_matches_snapshot(
     copy_case(config_dir)
 
     config = ErtConfig.from_file(config_file)
-    config.random_seed_generator.user_defined_seed = 1  # Ensure deterministic
+    config.random_seed = 1  # Ensure deterministic
     with (
         open_storage(config.ens_path, mode="w") as storage,
         unittest.mock.patch(  # Ensure deterministic uuid generation
@@ -719,7 +719,7 @@ def test_that_dumped_evaluate_ensemble_matches_snapshot(
     copy_case(config_dir)
 
     config = ErtConfig.from_file(config_file)
-    config.random_seed_generator.user_defined_seed = 1  # Ensure deterministic
+    config.random_seed = 1  # Ensure deterministic
     with (
         open_storage(config.ens_path, mode="w") as storage,
         unittest.mock.patch(  # Ensure deterministic uuid generation
@@ -753,7 +753,7 @@ def test_that_dumped_ensemble_experiment_matches_snapshot(
     copy_case(config_dir)
 
     config = ErtConfig.from_file(config_file)
-    config.random_seed_generator.user_defined_seed = 1  # Ensure deterministic
+    config.random_seed = 1  # Ensure deterministic
 
     _create_and_verify_runmodel_snapshot(
         config,
@@ -777,7 +777,7 @@ def test_that_dumped_ensemble_smoother_matches_snapshot(
     copy_case(config_dir)
 
     config = ErtConfig.from_file(config_file)
-    config.random_seed_generator.user_defined_seed = 1  # Ensure deterministic
+    config.random_seed = 1  # Ensure deterministic
 
     _create_and_verify_runmodel_snapshot(
         config,
@@ -799,7 +799,7 @@ def test_that_dumped_enif_matches_snapshot(case, copy_case, snapshot, change_to_
     copy_case(config_dir)
 
     config = ErtConfig.from_file(config_file)
-    config.random_seed_generator.user_defined_seed = 1  # Ensure deterministic
+    config.random_seed = 1  # Ensure deterministic
 
     _create_and_verify_runmodel_snapshot(
         config,
@@ -823,7 +823,7 @@ def test_that_dumped_esmda_matches_snapshot(
     copy_case(config_dir)
 
     config = ErtConfig.from_file(config_file)
-    config.random_seed_generator.user_defined_seed = 1  # Ensure deterministic
+    config.random_seed = 1  # Ensure deterministic
 
     _create_and_verify_runmodel_snapshot(
         config,
