@@ -94,10 +94,12 @@ class RandomSeedGenerator:
 
     @property
     def seed(self) -> int:
-        if self.user_defined_seed is not None:
-            return self.user_defined_seed
+        int_seed = (
+            SeedSequence().entropy
+            if self.user_defined_seed is None
+            else self.user_defined_seed
+        )
 
-        int_seed = SeedSequence().entropy
         logger.info(
             "To repeat this experiment, "
             "add the following random seed to your config file:\n"
